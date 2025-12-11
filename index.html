@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>知识星球助手 - 管理后台</title>
+    <link rel="stylesheet" href="mobile-admin.css">
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <div class="top-nav">
+        <h1>🎛️ 管理后台</h1>
+    </div>
+
+    <!-- 底部导航栏 -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showTab('dashboard')">
+            <div class="nav-icon">📊</div>
+            <div class="nav-label">仪表板</div>
+        </div>
+        <div class="nav-item" onclick="showTab('licenses')">
+            <div class="nav-icon">🔑</div>
+            <div class="nav-label">密钥</div>
+        </div>
+        <div class="nav-item" onclick="showTab('devices')">
+            <div class="nav-icon">📱</div>
+            <div class="nav-label">设备</div>
+        </div>
+        <div class="nav-item" onclick="showTab('settings')">
+            <div class="nav-icon">⚙️</div>
+            <div class="nav-label">设置</div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="content">
+        <!-- 消息提示 -->
+        <div id="message" class="message"></div>
+
+        <!-- 仪表板 -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-container" id="statsContainer"></div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <h2>最近密钥</h2>
+                    <button class="btn-refresh" onclick="loadDashboard()">🔄</button>
+                </div>
+                <div id="recentLicenses"></div>
+            </div>
+        </div>
+
+        <!-- 密钥管理 -->
+        <div id="licenses" class="tab-content">
+            <div class="section">
+                <h2>生成新密钥</h2>
+                <div class="form-box">
+                    <button class="btn-large btn-primary" onclick="generateNewLicense()">🎲 生成密钥</button>
+                    <input type="text" id="newLicense" class="input-large" readonly placeholder="点击上方按钮生成">
+                </div>
+                
+                <div class="form-box">
+                    <label>客户名称</label>
+                    <input type="text" id="customer" class="input-large" value="星球助手">
+                    
+                    <label>过期时间</label>
+                    <input type="date" id="expireDate" class="input-large" value="2049-12-31">
+                    
+                    <label>最大设备数</label>
+                    <select id="maxDevices" class="input-large">
+                        <option value="1">1 台</option>
+                        <option value="2">2 台</option>
+                        <option value="3">3 台</option>
+                        <option value="5">5 台</option>
+                        <option value="10">10 台</option>
+                        <option value="100" selected>100 台</option>
+                    </select>
+                    
+                    <button class="btn-large btn-success" onclick="registerLicense()">✅ 注册密钥</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header">
+                    <h2>所有密钥</h2>
+                    <button class="btn-refresh" onclick="loadAllLicenses()">🔄</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="searchKeyword" class="input-large" placeholder="搜索密钥或客户">
+                    <button class="btn-large" onclick="searchLicenses()">🔍 搜索</button>
+                </div>
+                <div id="allLicenses"></div>
+                <div id="licensesPagination"></div>
+            </div>
+        </div>
+
+        <!-- 设备管理 -->
+        <div id="devices" class="tab-content">
+            <div class="section">
+                <h2>查询设备</h2>
+                <div class="form-box">
+                    <input type="text" id="deviceLicense" class="input-large" placeholder="输入激活码">
+                    <button class="btn-large btn-primary" onclick="queryDevices()">🔍 查询</button>
+                </div>
+            </div>
+            <div id="devicesResult"></div>
+        </div>
+
+        <!-- 设置 -->
+        <div id="settings" class="tab-content">
+            <div class="section">
+                <h2>API 配置</h2>
+                <div class="form-box">
+                    <label>API 地址</label>
+                    <input type="text" id="apiUrl" class="input-large" value="https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com">
+                    
+                    <label>管理员密钥</label>
+                    <input type="password" id="adminKey" class="input-large" value="ADMIN-KEY-2025">
+                    
+                    <button class="btn-large btn-success" onclick="saveConfig()">💾 保存配置</button>
+                    <button class="btn-large" onclick="testConnection()">🔌 测试连接</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script src="mobile-admin.js"></script>
+</body>
+</html>
