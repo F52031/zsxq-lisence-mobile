@@ -231,7 +231,7 @@ function displayAllLicenses(data) {
         
         // IP 绑定状态
         const ipStatus = lic.ipBindingEnabled ? 
-            `<span class="badge badge-info" title="${(lic.allowedIPs || []).join(', ')}">🔒 ${(lic.allowedIPs || []).length} IP</span>` :
+            `<span class="badge badge-info" title="${(lic.allowedIPs || []).join(', ')}">🔒 ${(lic.allowedIPs || []).length}/2 IP</span>` :
             '<span class="badge badge-secondary">未启用</span>';
         
         const banBtn = lic.isBanned ? 
@@ -584,7 +584,7 @@ async function manageIPBinding(license) {
     // 构建对话框内容
     let message = `密钥: ${license}\n\n`;
     message += `当前状态: ${enabled ? '✅ 已启用（自动绑定）' : '❌ 未启用（等待首次激活）'}\n`;
-    message += `允许的 IP: ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
+    message += `允许的 IP (${allowedIPs.length}/2): ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
     
     if (data.devices && data.devices.length > 0) {
         message += '设备 IP 历史:\n';
@@ -598,8 +598,8 @@ async function manageIPBinding(license) {
     
     message += '请选择操作:\n';
     message += '1. 添加 IP 地址\n';
-    message += '2. 禁用 IP 绑定\n';
-    message += '3. 重新设置 IP 白名单\n';
+    message += '2. 删除 IP 地址\n';
+    message += '3. 禁用 IP 绑定\n';
     message += '4. 取消';
     
     const choice = prompt(message, '4');
@@ -607,14 +607,60 @@ async function manageIPBinding(license) {
     if (choice === '1') {
         await addIPToWhitelist(license, allowedIPs);
     } else if (choice === '2') {
-        await disableIPBinding(license);
+        await removeIPFromWhitelist(license, allowedIPs);
     } else if (choice === '3') {
-        await setIPWhitelist(license, enabled);
+        await disableIPBinding(license);
+    }
+}
+
+// 从白名单删除 IP
+async function removeIPFromWhitelist(license, currentIPs) {
+    if (currentIPs.length === 0) {
+        alert('当前没有绑定的 IP');
+        return;
+    }
+    
+    let message = '请选择要删除的 IP:\n\n';
+    currentIPs.forEach((ip, index) => {
+        message += `${index + 1}. ${ip}\n`;
+    });
+    
+    const choice = prompt(message, '');
+    if (!choice) return;
+    
+    const index = parseInt(choice) - 1;
+    if (index < 0 || index >= currentIPs.length) {
+        alert('无效的选择');
+        return;
+    }
+    
+    const ipToRemove = currentIPs[index];
+    if (!confirm(`确定要删除 IP: ${ipToRemove} 吗？`)) return;
+    
+    const updatedIPs = currentIPs.filter((_, i) => i !== index);
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: updatedIPs.length > 0,
+        allowedIPs: updatedIPs
+    });
+    
+    if (result.success) {
+        showMessage(`已删除 IP: ${ipToRemove}`, 'success');
+        queryDevices();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
     }
 }
 
 // 添加 IP 到白名单
 async function addIPToWhitelist(license, currentIPs) {
+    // 检查 IP 数量限制
+    if (currentIPs.length >= 2) {
+        alert('每个密钥最多只能绑定 2 个 IP 地址\n\n如需添加新 IP，请先删除现有 IP');
+        return;
+    }
+    
     const newIP = prompt('请输入要添加的 IP 地址:', '');
     if (!newIP || !newIP.trim()) return;
     
@@ -722,7 +768,7 @@ async function manageIPBindingFromList(license) {
     // 构建对话框内容
     let message = `密钥: ${license}\n\n`;
     message += `当前状态: ${enabled ? '✅ 已启用（自动绑定）' : '❌ 未启用（等待首次激活）'}\n`;
-    message += `允许的 IP: ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
+    message += `允许的 IP (${allowedIPs.length}/2): ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
     
     if (data.devices && data.devices.length > 0) {
         message += '设备 IP 历史:\n';
@@ -736,8 +782,8 @@ async function manageIPBindingFromList(license) {
     
     message += '请选择操作:\n';
     message += '1. 添加 IP 地址\n';
-    message += '2. 禁用 IP 绑定\n';
-    message += '3. 重新设置 IP 白名单\n';
+    message += '2. 删除 IP 地址\n';
+    message += '3. 禁用 IP 绑定\n';
     message += '4. 取消';
     
     const choice = prompt(message, '4');
@@ -745,14 +791,60 @@ async function manageIPBindingFromList(license) {
     if (choice === '1') {
         await addIPToWhitelistFromList(license, allowedIPs);
     } else if (choice === '2') {
-        await disableIPBindingFromList(license);
+        await removeIPFromWhitelistFromList(license, allowedIPs);
     } else if (choice === '3') {
-        await setIPWhitelistFromList(license, enabled);
+        await disableIPBindingFromList(license);
+    }
+}
+
+// 从列表删除 IP
+async function removeIPFromWhitelistFromList(license, currentIPs) {
+    if (currentIPs.length === 0) {
+        alert('当前没有绑定的 IP');
+        return;
+    }
+    
+    let message = '请选择要删除的 IP:\n\n';
+    currentIPs.forEach((ip, index) => {
+        message += `${index + 1}. ${ip}\n`;
+    });
+    
+    const choice = prompt(message, '');
+    if (!choice) return;
+    
+    const index = parseInt(choice) - 1;
+    if (index < 0 || index >= currentIPs.length) {
+        alert('无效的选择');
+        return;
+    }
+    
+    const ipToRemove = currentIPs[index];
+    if (!confirm(`确定要删除 IP: ${ipToRemove} 吗？`)) return;
+    
+    const updatedIPs = currentIPs.filter((_, i) => i !== index);
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: updatedIPs.length > 0,
+        allowedIPs: updatedIPs
+    });
+    
+    if (result.success) {
+        showMessage(`已删除 IP: ${ipToRemove}`, 'success');
+        loadAllLicenses();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
     }
 }
 
 // 从列表添加 IP 到白名单
 async function addIPToWhitelistFromList(license, currentIPs) {
+    // 检查 IP 数量限制
+    if (currentIPs.length >= 2) {
+        alert('每个密钥最多只能绑定 2 个 IP 地址\n\n如需添加新 IP，请先删除现有 IP');
+        return;
+    }
+    
     const newIP = prompt('请输入要添加的 IP 地址:', '');
     if (!newIP || !newIP.trim()) return;
     
