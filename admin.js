@@ -195,7 +195,7 @@ async function registerLicense() {
     });
 
     if (result.success) {
-        showMessage('密钥注册成功！', 'success');
+        showMessage('密钥注册成功！客户首次激活时会自动绑定 IP', 'success');
         document.getElementById('customer').value = '星球助手';
         document.getElementById('newLicense').value = '';
         loadAllLicenses();
@@ -222,12 +222,17 @@ function displayAllLicenses(data) {
         return;
     }
 
-    let html = '<table><thead><tr><th>密钥</th><th>客户</th><th>过期时间</th><th>设备</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>密钥</th><th>客户</th><th>过期时间</th><th>设备</th><th>状态</th><th>IP绑定</th><th>操作</th></tr></thead><tbody>';
     data.licenses.forEach(lic => {
         const isExpired = new Date(lic.expire) < new Date();
         const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' : 
                       isExpired ? '<span class="badge badge-warning">已过期</span>' :
                       '<span class="badge badge-success">正常</span>';
+        
+        // IP 绑定状态
+        const ipStatus = lic.ipBindingEnabled ? 
+            `<span class="badge badge-info" title="${(lic.allowedIPs || []).join(', ')}">🔒 ${(lic.allowedIPs || []).length} IP</span>` :
+            '<span class="badge badge-secondary">未启用</span>';
         
         const banBtn = lic.isBanned ? 
             `<button class="btn btn-success btn-sm" onclick="unbanLicenseAction('${lic.license}')">解封</button>` :
@@ -239,9 +244,10 @@ function displayAllLicenses(data) {
             <td>${lic.expire}</td>
             <td>${lic.devicesUsed} / ${lic.maxDevices}</td>
             <td>${status}</td>
-            <td>${lic.created}</td>
+            <td>${ipStatus}</td>
             <td>
                 <button class="btn btn-sm" onclick="editLicense('${lic.license}')">编辑</button>
+                <button class="btn btn-sm" onclick="manageIPBindingFromList('${lic.license}')">🔒</button>
                 ${banBtn}
                 <button class="btn btn-danger btn-sm" onclick="deleteLicense('${lic.license}')">删除</button>
             </td>
@@ -294,7 +300,7 @@ function displayDevices(data, license) {
         return;
     }
 
-    let html = '<div class="card"><div class="card-header"><h3>设备列表</h3></div><table><thead><tr><th>设备 ID</th><th>首次激活</th><th>最后使用</th><th>首次 IP</th><th>最近 IP</th><th>状态</th><th>操作</th></tr></thead><tbody>';
+    let html = '<div class="card"><div class="card-header"><h3>设备列表</h3><button class="btn btn-sm" onclick="manageIPBinding(\'' + license + '\')">🔒 IP 绑定</button></div><table><thead><tr><th>设备 ID</th><th>首次激活</th><th>最后使用</th><th>首次 IP</th><th>最近 IP</th><th>状态</th><th>操作</th></tr></thead><tbody>';
     data.devices.forEach(device => {
         const status = device.isBanned ? '<span class="badge badge-danger">已封禁</span>' : '<span class="badge badge-success">正常</span>';
         const action = device.isBanned ?
@@ -547,15 +553,294 @@ function displayLogs(logs) {
         return;
     }
 
-    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>密钥</th><th>设备ID</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>密钥</th><th>设备ID</th><th>IP</th></tr></thead><tbody>';
     logs.forEach(log => {
         html += `<tr>
             <td>${log.timestamp}</td>
             <td>${log.action}</td>
             <td><span class="code">${log.license || '-'}</span></td>
             <td>${log.machineId ? '<span class="code">' + log.machineId.substring(0, 8) + '...</span>' : '-'}</td>
+            <td><span class="code">${log.ip || '-'}</span></td>
         </tr>`;
     });
     html += '</tbody></table>';
     document.getElementById('logsContainer').innerHTML = html;
+}
+
+// ==================== IP 绑定功能 ====================
+
+// 管理 IP 绑定
+async function manageIPBinding(license) {
+    const result = await apiRequest('getIPBinding', { license });
+    if (!result.success) {
+        showMessage(result.error || '查询失败', 'error');
+        return;
+    }
+    
+    const data = result.data;
+    const enabled = data.enabled || false;
+    const allowedIPs = data.allowedIPs || [];
+    
+    // 构建对话框内容
+    let message = `密钥: ${license}\n\n`;
+    message += `当前状态: ${enabled ? '✅ 已启用（自动绑定）' : '❌ 未启用（等待首次激活）'}\n`;
+    message += `允许的 IP: ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
+    
+    if (data.devices && data.devices.length > 0) {
+        message += '设备 IP 历史:\n';
+        data.devices.forEach((device, index) => {
+            message += `${index + 1}. ${device.machineId}\n`;
+            message += `   首次: ${device.firstIP || '未知'}\n`;
+            message += `   最近: ${device.lastIP || '未知'}\n`;
+        });
+        message += '\n';
+    }
+    
+    message += '请选择操作:\n';
+    message += '1. 添加 IP 地址\n';
+    message += '2. 禁用 IP 绑定\n';
+    message += '3. 重新设置 IP 白名单\n';
+    message += '4. 取消';
+    
+    const choice = prompt(message, '4');
+    
+    if (choice === '1') {
+        await addIPToWhitelist(license, allowedIPs);
+    } else if (choice === '2') {
+        await disableIPBinding(license);
+    } else if (choice === '3') {
+        await setIPWhitelist(license, enabled);
+    }
+}
+
+// 添加 IP 到白名单
+async function addIPToWhitelist(license, currentIPs) {
+    const newIP = prompt('请输入要添加的 IP 地址:', '');
+    if (!newIP || !newIP.trim()) return;
+    
+    const ip = newIP.trim();
+    if (currentIPs.includes(ip)) {
+        alert('该 IP 已在白名单中');
+        return;
+    }
+    
+    const updatedIPs = [...currentIPs, ip];
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: true,
+        allowedIPs: updatedIPs
+    });
+    
+    if (result.success) {
+        showMessage(`已添加 IP: ${ip}`, 'success');
+        queryDevices();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 启用 IP 绑定
+async function enableIPBinding(license, currentIPs) {
+    if (currentIPs.length === 0) {
+        alert('请先设置 IP 白名单');
+        await setIPWhitelist(license, false);
+        return;
+    }
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: true,
+        allowedIPs: currentIPs
+    });
+    
+    if (result.success) {
+        showMessage('IP 绑定已启用', 'success');
+        queryDevices();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 禁用 IP 绑定
+async function disableIPBinding(license) {
+    if (!confirm('确定要禁用 IP 绑定吗？')) return;
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: false
+    });
+    
+    if (result.success) {
+        showMessage('IP 绑定已禁用', 'success');
+        queryDevices();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 设置 IP 白名单
+async function setIPWhitelist(license, currentEnabled) {
+    const ipsText = prompt('请输入允许的 IP 地址（每行一个）:\n\n例如:\n192.168.1.100\n10.0.0.50', '');
+    if (ipsText === null) return;
+    
+    const allowedIPs = ipsText.split('\n')
+        .map(ip => ip.trim())
+        .filter(ip => ip.length > 0);
+    
+    if (allowedIPs.length === 0) {
+        alert('请至少输入一个 IP 地址');
+        return;
+    }
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: currentEnabled,
+        allowedIPs
+    });
+    
+    if (result.success) {
+        showMessage('IP 白名单已更新', 'success');
+        queryDevices();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 从密钥列表管理 IP 绑定
+async function manageIPBindingFromList(license) {
+    const result = await apiRequest('getIPBinding', { license });
+    if (!result.success) {
+        showMessage(result.error || '查询失败', 'error');
+        return;
+    }
+    
+    const data = result.data;
+    const enabled = data.enabled || false;
+    const allowedIPs = data.allowedIPs || [];
+    
+    // 构建对话框内容
+    let message = `密钥: ${license}\n\n`;
+    message += `当前状态: ${enabled ? '✅ 已启用（自动绑定）' : '❌ 未启用（等待首次激活）'}\n`;
+    message += `允许的 IP: ${allowedIPs.length > 0 ? allowedIPs.join(', ') : '无'}\n\n`;
+    
+    if (data.devices && data.devices.length > 0) {
+        message += '设备 IP 历史:\n';
+        data.devices.forEach((device, index) => {
+            message += `${index + 1}. ${device.machineId}\n`;
+            message += `   首次: ${device.firstIP || '未知'}\n`;
+            message += `   最近: ${device.lastIP || '未知'}\n`;
+        });
+        message += '\n';
+    }
+    
+    message += '请选择操作:\n';
+    message += '1. 添加 IP 地址\n';
+    message += '2. 禁用 IP 绑定\n';
+    message += '3. 重新设置 IP 白名单\n';
+    message += '4. 取消';
+    
+    const choice = prompt(message, '4');
+    
+    if (choice === '1') {
+        await addIPToWhitelistFromList(license, allowedIPs);
+    } else if (choice === '2') {
+        await disableIPBindingFromList(license);
+    } else if (choice === '3') {
+        await setIPWhitelistFromList(license, enabled);
+    }
+}
+
+// 从列表添加 IP 到白名单
+async function addIPToWhitelistFromList(license, currentIPs) {
+    const newIP = prompt('请输入要添加的 IP 地址:', '');
+    if (!newIP || !newIP.trim()) return;
+    
+    const ip = newIP.trim();
+    if (currentIPs.includes(ip)) {
+        alert('该 IP 已在白名单中');
+        return;
+    }
+    
+    const updatedIPs = [...currentIPs, ip];
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: true,
+        allowedIPs: updatedIPs
+    });
+    
+    if (result.success) {
+        showMessage(`已添加 IP: ${ip}`, 'success');
+        loadAllLicenses();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 从列表启用 IP 绑定
+async function enableIPBindingFromList(license, currentIPs) {
+    if (currentIPs.length === 0) {
+        alert('请先设置 IP 白名单');
+        await setIPWhitelistFromList(license, false);
+        return;
+    }
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: true,
+        allowedIPs: currentIPs
+    });
+    
+    if (result.success) {
+        showMessage('IP 绑定已启用', 'success');
+        loadAllLicenses();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 从列表禁用 IP 绑定
+async function disableIPBindingFromList(license) {
+    if (!confirm('确定要禁用 IP 绑定吗？')) return;
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: false
+    });
+    
+    if (result.success) {
+        showMessage('IP 绑定已禁用', 'success');
+        loadAllLicenses();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 从列表设置 IP 白名单
+async function setIPWhitelistFromList(license, currentEnabled) {
+    const ipsText = prompt('请输入允许的 IP 地址（每行一个）:\n\n例如:\n192.168.1.100\n10.0.0.50', '');
+    if (ipsText === null) return;
+    
+    const allowedIPs = ipsText.split('\n')
+        .map(ip => ip.trim())
+        .filter(ip => ip.length > 0);
+    
+    if (allowedIPs.length === 0) {
+        alert('请至少输入一个 IP 地址');
+        return;
+    }
+    
+    const result = await apiRequest('updateIPBinding', {
+        license,
+        enabled: currentEnabled,
+        allowedIPs
+    });
+    
+    if (result.success) {
+        showMessage('IP 白名单已更新', 'success');
+        loadAllLicenses();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
 }
