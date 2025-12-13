@@ -27,6 +27,7 @@ function showTab(tabName) {
     } else if (tabName === 'review') {
         loadPendingIPs();
         loadApprovedIPs();
+        loadRejectedIPs();
     }
 }
 
@@ -352,6 +353,55 @@ async function removeApprovedIPAction(ip) {
     if (result.success) {
         showMessage(`IP ${ip} 已移除`, 'success');
         loadApprovedIPs();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+
+// 加载被拒绝 IP 列表
+async function loadRejectedIPs() {
+    const result = await apiRequest('listRejectedIPs', {});
+    if (result.success) {
+        displayRejectedIPs(result.data);
+    } else {
+        document.getElementById('rejectedIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">加载失败</div></div>';
+    }
+}
+
+// 显示被拒绝 IP（移动端优化）
+function displayRejectedIPs(list) {
+    if (!list || list.length === 0) {
+        document.getElementById('rejectedIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">✨</div><div class="empty-state-text">暂无被拒绝的 IP</div></div>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(ip => {
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <div class="list-item-title">${ip}</div>
+                    <span class="badge badge-danger">已拒绝</span>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn-small btn-success" onclick="unrejectIPAction('${ip}')">🔄 恢复</button>
+                </div>
+            </div>
+        `;
+    });
+    html += `<div class="hint" style="text-align: center; margin-top: 10px;">共 ${list.length} 个被拒绝 IP</div>`;
+    document.getElementById('rejectedIPsContainer').innerHTML = html;
+}
+
+// 恢复被拒绝的 IP
+async function unrejectIPAction(ip) {
+    if (!confirm(`确定要恢复 IP: ${ip} 吗？\n\n恢复后该 IP 可以重新申请激活。`)) return;
+    
+    const result = await apiRequest('unrejectIP', { ip });
+    if (result.success) {
+        showMessage(`IP ${ip} 已恢复`, 'success');
+        loadRejectedIPs();
     } else {
         showMessage(result.error || '操作失败', 'error');
     }
