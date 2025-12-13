@@ -24,6 +24,9 @@ function showTab(tabName) {
         loadDashboard();
     } else if (tabName === 'licenses') {
         loadAllLicenses();
+    } else if (tabName === 'review') {
+        loadPendingIPs();
+        loadApprovedIPs();
     }
 }
 
@@ -238,3 +241,118 @@ function displayLicensesPagination(data) {
 window.addEventListener('load', function() {
     loadDashboard();
 });
+
+
+// ==================== 激活审核功能（移动端优化） ====================
+
+// 加载待审核 IP 列表
+async function loadPendingIPs() {
+    const result = await apiRequest('listPendingIPs', {});
+    if (result.success) {
+        displayPendingIPs(result.data);
+    } else {
+        document.getElementById('pendingIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">加载失败</div></div>';
+    }
+}
+
+// 显示待审核 IP（移动端优化）
+function displayPendingIPs(list) {
+    if (!list || list.length === 0) {
+        document.getElementById('pendingIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">✨</div><div class="empty-state-text">暂无待审核的激活请求</div></div>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(item => {
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <div class="list-item-title">${item.ip}</div>
+                    <span class="badge badge-warning">${item.remaining}</span>
+                </div>
+                <div class="list-item-info">🖥️ 设备: ${item.machineId || '-'}</div>
+                <div class="list-item-info">🕐 激活时间: ${item.createdAt}</div>
+                <div class="list-item-actions">
+                    <button class="btn-small btn-success" onclick="approveIPAction('${item.ip}')">✅ 通过</button>
+                    <button class="btn-small btn-danger" onclick="rejectIPAction('${item.ip}')">❌ 拒绝</button>
+                </div>
+            </div>
+        `;
+    });
+    document.getElementById('pendingIPsContainer').innerHTML = html;
+}
+
+// 审核通过
+async function approveIPAction(ip) {
+    if (!confirm(`确定要通过 IP: ${ip} 的激活申请吗？\n\n通过后该 IP 可永久使用插件。`)) return;
+    
+    const result = await apiRequest('approveIP', { ip });
+    if (result.success) {
+        showMessage(`IP ${ip} 已通过审核`, 'success');
+        loadPendingIPs();
+        loadApprovedIPs();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 拒绝激活
+async function rejectIPAction(ip) {
+    if (!confirm(`确定要拒绝 IP: ${ip} 的激活申请吗？`)) return;
+    
+    const result = await apiRequest('rejectIP', { ip });
+    if (result.success) {
+        showMessage(`IP ${ip} 已拒绝`, 'success');
+        loadPendingIPs();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 加载已通过 IP 列表
+async function loadApprovedIPs() {
+    const result = await apiRequest('listApprovedIPs', {});
+    if (result.success) {
+        displayApprovedIPs(result.data);
+    } else {
+        document.getElementById('approvedIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><div class="empty-state-text">加载失败</div></div>';
+    }
+}
+
+// 显示已通过 IP（移动端优化）
+function displayApprovedIPs(list) {
+    if (!list || list.length === 0) {
+        document.getElementById('approvedIPsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-text">暂无已通过的 IP</div></div>';
+        return;
+    }
+
+    let html = '';
+    list.forEach(ip => {
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <div class="list-item-title">${ip}</div>
+                    <span class="badge badge-success">已授权</span>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn-small btn-danger" onclick="removeApprovedIPAction('${ip}')">🗑️ 移除</button>
+                </div>
+            </div>
+        `;
+    });
+    html += `<div class="hint" style="text-align: center; margin-top: 10px;">共 ${list.length} 个已授权 IP</div>`;
+    document.getElementById('approvedIPsContainer').innerHTML = html;
+}
+
+// 移除已通过 IP
+async function removeApprovedIPAction(ip) {
+    if (!confirm(`确定要移除 IP: ${ip} 吗？\n\n移除后该 IP 将无法使用插件。`)) return;
+    
+    const result = await apiRequest('removeApprovedIP', { ip });
+    if (result.success) {
+        showMessage(`IP ${ip} 已移除`, 'success');
+        loadApprovedIPs();
+    } else {
+        showMessage(result.error || '操作失败', 'error');
+    }
+}
