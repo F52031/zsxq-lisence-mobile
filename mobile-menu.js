@@ -328,13 +328,25 @@ function displayApprovedIPs(list) {
     }
 
     let html = '';
-    list.forEach(ip => {
+    list.forEach(item => {
+        // 兼容旧格式（字符串）和新格式（对象）
+        const ip = typeof item === 'string' ? item : (item.ip || '');
+        const machineId = typeof item === 'object' ? (item.machineId || '') : '';
+        const approvedAt = typeof item === 'object' ? (item.approvedAt || '') : '';
+        const lastSeen = typeof item === 'object' ? (item.lastSeen || '') : '';
+        
+        // 设备 ID 显示：如果有值则显示前8位
+        const machineIdDisplay = machineId ? machineId.substring(0, 8) + '...' : '-';
+        
         html += `
             <div class="list-item">
                 <div class="list-item-header">
                     <div class="list-item-title">${ip}</div>
                     <span class="badge badge-success">已授权</span>
                 </div>
+                ${machineId ? `<div class="list-item-info">🖥️ 设备: <span title="${machineId}">${machineIdDisplay}</span></div>` : ''}
+                ${approvedAt && approvedAt !== '-' ? `<div class="list-item-info">✅ 通过: ${approvedAt}</div>` : ''}
+                ${lastSeen && lastSeen !== '-' ? `<div class="list-item-info">🕐 最近: ${lastSeen}</div>` : ''}
                 <div class="list-item-actions">
                     <button class="btn-small btn-danger" onclick="removeApprovedIPAction('${ip}')">🗑️ 移除</button>
                 </div>
