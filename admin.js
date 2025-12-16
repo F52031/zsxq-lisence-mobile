@@ -539,17 +539,24 @@ function showImportDialog() {
 }
 
 // 加载操作日志
-async function loadLogs() {
-    const result = await apiRequest('getLogs', { limit: 50 });
+let currentLogsPage = 1;
+const logsPageSize = 50;
+async function loadLogs(page = 1) {
+    currentLogsPage = page;
+    const result = await apiRequest('getLogs', { 
+        page: page,
+        pageSize: logsPageSize 
+    });
     if (result.success) {
-        displayLogs(result.data);
+        displayLogs(result.data, result.total || 0);
     }
 }
 
 // 显示操作日志
-function displayLogs(logs) {
+function displayLogs(logs, total) {
     if (!logs || logs.length === 0) {
         document.getElementById('logsContainer').innerHTML = '<div class="loading">暂无日志</div>';
+        document.getElementById('logsPagination').innerHTML = '';
         return;
     }
 
@@ -566,6 +573,37 @@ function displayLogs(logs) {
     });
     html += '</tbody></table>';
     document.getElementById('logsContainer').innerHTML = html;
+    
+    // 显示分页
+    displayLogsPagination(total);
+}
+
+// 显示日志分页
+function displayLogsPagination(total) {
+    const totalPages = Math.ceil(total / logsPageSize);
+    
+    if (totalPages <= 1) {
+        document.getElementById('logsPagination').innerHTML = '';
+        return;
+    }
+
+    let html = '<div class="pagination">';
+    
+    // 上一页按钮
+    if (currentLogsPage > 1) {
+        html += `<button class="btn btn-sm" onclick="loadLogs(${currentLogsPage - 1})">上一页</button>`;
+    }
+    
+    // 页码信息
+    html += `<span>第 ${currentLogsPage} / ${totalPages} 页 (共 ${total} 条记录)</span>`;
+    
+    // 下一页按钮
+    if (currentLogsPage < totalPages) {
+        html += `<button class="btn btn-sm" onclick="loadLogs(${currentLogsPage + 1})">下一页</button>`;
+    }
+    
+    html += '</div>';
+    document.getElementById('logsPagination').innerHTML = html;
 }
 
 // ==================== IP 绑定功能 ====================
