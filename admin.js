@@ -642,13 +642,51 @@ function displayLogs(logs, total) {
         return;
     }
 
-    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>用户名</th><th>密钥</th><th>设备ID</th><th>IP</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>结果</th><th>用户/类型</th><th>密钥</th><th>设备ID</th><th>IP</th></tr></thead><tbody>';
     logs.forEach(log => {
+        // 操作类型美化
+        const actionMap = {
+            'validate': '🔐 验证',
+            'task_start': '▶️ 开始任务',
+            'activate': '✨ 激活',
+            'ban': '🚫 封禁',
+            'approve': '✅ 通过',
+            'reject': '❌ 拒绝'
+        };
+        const actionDisplay = actionMap[log.action] || log.action;
+
+        // 结果状态
+        let resultBadge = '';
+        if (log.success === true) {
+            resultBadge = '<span class="badge badge-success">成功</span>';
+        } else if (log.success === false) {
+            resultBadge = '<span class="badge badge-danger">失败</span>';
+        } else {
+            resultBadge = '-';
+        }
+
+        // 密钥类型判断
+        let licenseType = '';
+        if (log.license) {
+            if (log.license.startsWith('ZSXQ-TEMP-2025')) {
+                licenseType = '<span class="badge badge-info">自动发货</span>';
+            } else if (log.license.startsWith('ZSXQ-8888')) {
+                licenseType = '<span class="badge badge-warning">试用</span>';
+            } else if (log.license === 'APPROVED_IP') {
+                licenseType = '<span class="badge badge-success">IP白名单</span>';
+            } else {
+                licenseType = '<span class="badge badge-primary">正式</span>';
+            }
+        }
+
+        const customerDisplay = log.customer ? log.customer : licenseType;
+
         html += `<tr>
             <td>${log.timestamp}</td>
-            <td>${log.action}</td>
-            <td>${log.customer || '-'}</td>
-            <td><span class="code">${log.license || '-'}</span></td>
+            <td>${actionDisplay}</td>
+            <td>${resultBadge}</td>
+            <td>${customerDisplay || '-'}</td>
+            <td><span class="code">${log.license ? (log.license.length > 16 ? log.license.substring(0, 16) + '...' : log.license) : '-'}</span></td>
             <td>${log.machineId ? '<span class="code">' + log.machineId.substring(0, 8) + '...</span>' : '-'}</td>
             <td><span class="code">${log.ip || '-'}</span></td>
         </tr>`;
