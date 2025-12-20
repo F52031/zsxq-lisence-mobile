@@ -4,21 +4,21 @@ function showTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
     });
-    
+
     // 移除所有导航项的激活状态
     document.querySelectorAll('.nav-item').forEach(item => {
         item.classList.remove('active');
     });
-    
+
     // 显示选中的标签页
     document.getElementById(tabName).classList.add('active');
-    
+
     // 激活对应的导航项
     event.currentTarget.classList.add('active');
-    
+
     // 滚动到顶部
     window.scrollTo(0, 0);
-    
+
     // 加载对应页面的数据
     if (tabName === 'dashboard') {
         loadDashboard();
@@ -67,10 +67,10 @@ function displayRecentLicenses(data) {
 
     let html = '';
     data.licenses.slice(0, 5).forEach(lic => {
-        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' : 
-                      new Date(lic.expire) < new Date() ? '<span class="badge badge-warning">已过期</span>' :
-                      '<span class="badge badge-success">正常</span>';
-        
+        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' :
+            new Date(lic.expire) < new Date() ? '<span class="badge badge-warning">已过期</span>' :
+                '<span class="badge badge-success">正常</span>';
+
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -95,19 +95,19 @@ function displayAllLicenses(data) {
     let html = '';
     data.licenses.forEach(lic => {
         const isExpired = new Date(lic.expire) < new Date();
-        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' : 
-                      isExpired ? '<span class="badge badge-warning">已过期</span>' :
-                      '<span class="badge badge-success">正常</span>';
-        
+        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' :
+            isExpired ? '<span class="badge badge-warning">已过期</span>' :
+                '<span class="badge badge-success">正常</span>';
+
         // IP 绑定状态
-        const ipStatus = lic.ipBindingEnabled ? 
+        const ipStatus = lic.ipBindingEnabled ?
             `<span class="badge badge-info">🔒 ${(lic.allowedIPs || []).length} IP</span>` :
             '<span class="badge badge-secondary">IP未启用</span>';
-        
-        const banBtn = lic.isBanned ? 
+
+        const banBtn = lic.isBanned ?
             `<button class="btn-small btn-success" onclick="unbanLicenseAction('${lic.license}')">解封</button>` :
             `<button class="btn-small btn-danger" onclick="banLicenseAction('${lic.license}')">封禁</button>`;
-        
+
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -142,16 +142,16 @@ function displayDevices(data, license) {
     html += '<h2>设备列表</h2>';
     html += `<button class="btn-small" onclick="manageIPBinding('${license}')">🔒 IP绑定</button>`;
     html += '</div>';
-    
+
     data.devices.forEach(device => {
         const status = device.isBanned ? '<span class="badge badge-danger">已封禁</span>' : '<span class="badge badge-success">正常</span>';
         const action = device.isBanned ?
             `<button class="btn-small btn-success" onclick="unbanDevice('${license}', '${device.machineId}')">解封</button>` :
             `<button class="btn-small btn-danger" onclick="banDevice('${license}', '${device.machineId}')">封禁</button>`;
-        
-        const ipHistoryBtn = device.ipHistory && device.ipHistory.length > 0 ? 
+
+        const ipHistoryBtn = device.ipHistory && device.ipHistory.length > 0 ?
             `<button class="btn-small" onclick="showIPHistory('${device.machineId}', ${JSON.stringify(device.ipHistory).replace(/"/g, '&quot;')})">IP历史</button>` : '';
-        
+
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -183,19 +183,19 @@ function displaySearchResults(licenses) {
 
     let html = '';
     licenses.forEach(lic => {
-        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' : 
-                      lic.isExpired ? '<span class="badge badge-warning">已过期</span>' :
-                      '<span class="badge badge-success">正常</span>';
-        
+        const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' :
+            lic.isExpired ? '<span class="badge badge-warning">已过期</span>' :
+                '<span class="badge badge-success">正常</span>';
+
         // IP 绑定状态
-        const ipStatus = lic.ipBindingEnabled ? 
+        const ipStatus = lic.ipBindingEnabled ?
             `<span class="badge badge-info">🔒 ${(lic.allowedIPs || []).length} IP</span>` :
             '<span class="badge badge-secondary">IP未启用</span>';
-        
-        const banBtn = lic.isBanned ? 
+
+        const banBtn = lic.isBanned ?
             `<button class="btn-small btn-success" onclick="unbanLicenseAction('${lic.license}')">解封</button>` :
             `<button class="btn-small btn-danger" onclick="banLicenseAction('${lic.license}')">封禁</button>`;
-        
+
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -239,7 +239,7 @@ function displayLicensesPagination(data) {
 }
 
 // 页面加载完成后初始化
-window.addEventListener('load', function() {
+window.addEventListener('load', function () {
     loadDashboard();
 });
 
@@ -291,7 +291,7 @@ function displayPendingIPs(list) {
 // 审核通过
 async function approveIPAction(ip) {
     if (!confirm(`确定要通过 IP: ${ip} 的激活申请吗？\n\n通过后该 IP 可永久使用插件。`)) return;
-    
+
     const result = await apiRequest('approveIP', { ip });
     if (result.success) {
         showMessage(`IP ${ip} 已通过审核`, 'success');
@@ -305,7 +305,7 @@ async function approveIPAction(ip) {
 // 拒绝激活
 async function rejectIPAction(ip) {
     if (!confirm(`确定要拒绝 IP: ${ip} 的激活申请吗？`)) return;
-    
+
     const result = await apiRequest('rejectIP', { ip });
     if (result.success) {
         showMessage(`IP ${ip} 已拒绝`, 'success');
@@ -339,10 +339,10 @@ function displayApprovedIPs(list) {
         const machineId = typeof item === 'object' ? (item.machineId || '') : '';
         const approvedAt = typeof item === 'object' ? (item.approvedAt || '') : '';
         const lastSeen = typeof item === 'object' ? (item.lastSeen || '') : '';
-        
+
         // 设备 ID 显示：如果有值则显示前8位
         const machineIdDisplay = machineId ? machineId.substring(0, 8) + '...' : '-';
-        
+
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -365,7 +365,7 @@ function displayApprovedIPs(list) {
 // 移除已通过 IP
 async function removeApprovedIPAction(ip) {
     if (!confirm(`确定要移除 IP: ${ip} 吗？\n\n移除后该 IP 将无法使用插件。`)) return;
-    
+
     const result = await apiRequest('removeApprovedIP', { ip });
     if (result.success) {
         showMessage(`IP ${ip} 已移除`, 'success');
@@ -414,12 +414,41 @@ function displayRejectedIPs(list) {
 // 恢复被拒绝的 IP
 async function unrejectIPAction(ip) {
     if (!confirm(`确定要恢复 IP: ${ip} 吗？\n\n恢复后该 IP 可以重新申请激活。`)) return;
-    
+
     const result = await apiRequest('unrejectIP', { ip });
     if (result.success) {
         showMessage(`IP ${ip} 已恢复`, 'success');
         loadRejectedIPs();
     } else {
         showMessage(result.error || '操作失败', 'error');
+    }
+}
+
+// 手动封禁 IP
+async function manualBanIP() {
+    const input = document.getElementById('banIPInput');
+    const ip = input.value.trim();
+
+    if (!ip) {
+        showMessage('请输入要封禁的 IP 地址', 'error');
+        return;
+    }
+
+    // 简单验证 IP 格式
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(ip)) {
+        showMessage('请输入有效的 IP 地址格式（如 192.168.1.1）', 'error');
+        return;
+    }
+
+    if (!confirm(`确定要封禁 IP: ${ip} 吗？\n\n封禁后该 IP 无法使用插件。`)) return;
+
+    const result = await apiRequest('rejectIP', { ip });
+    if (result.success) {
+        showMessage(`IP ${ip} 已封禁`, 'success');
+        input.value = ''; // 清空输入框
+        loadRejectedIPs();
+    } else {
+        showMessage(result.error || '封禁失败', 'error');
     }
 }
