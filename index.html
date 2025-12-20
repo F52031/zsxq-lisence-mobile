@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>知识星球助手 - 管理后台</title>
     <link rel="stylesheet" href="admin.css">
 </head>
+
 <body>
     <!-- 顶部导航 -->
     <div class="top-nav">
@@ -44,7 +46,7 @@
         <!-- 仪表板 -->
         <div id="dashboard" class="tab-content active">
             <div class="stats-container" id="statsContainer"></div>
-            
+
             <div class="section">
                 <div class="section-header">
                     <h2>最近密钥</h2>
@@ -62,14 +64,14 @@
                     <button class="btn-large btn-primary" onclick="generateNewLicense()">🎲 生成密钥</button>
                     <input type="text" id="newLicense" class="input-large" readonly placeholder="点击上方按钮生成">
                 </div>
-                
+
                 <div class="form-box">
                     <label>客户名称</label>
                     <input type="text" id="customer" class="input-large" value="星球助手">
-                    
+
                     <label>过期时间</label>
                     <input type="date" id="expireDate" class="input-large" value="2049-12-31">
-                    
+
                     <label>最大设备数</label>
                     <select id="maxDevices" class="input-large">
                         <option value="1">1 台</option>
@@ -79,9 +81,20 @@
                         <option value="10">10 台</option>
                         <option value="100" selected>100 台</option>
                     </select>
-                    
+
                     <button class="btn-large btn-success" onclick="registerLicense()">✅ 注册密钥</button>
                 </div>
+            </div>
+
+            <div class="section">
+                <h2>📝 生成临时密钥</h2>
+                <div class="form-box">
+                    <label>生成数量（1-50）</label>
+                    <input type="number" id="tempLicenseCount" class="input-large" value="1" min="1" max="50">
+                    <button class="btn-large btn-primary" onclick="generateTempLicenses()">🎯 生成临时密钥</button>
+                    <p class="hint">💡 每个临时密钥：5次任务、3小时有效期，格式 ZSXQ-8888-0001</p>
+                </div>
+                <div id="tempLicensesResult"></div>
             </div>
 
             <div class="section">
@@ -145,11 +158,12 @@
                 <h2>API 配置</h2>
                 <div class="form-box">
                     <label>API 地址</label>
-                    <input type="text" id="apiUrl" class="input-large" value="https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com">
-                    
+                    <input type="text" id="apiUrl" class="input-large"
+                        value="https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com">
+
                     <label>管理员密钥</label>
                     <input type="password" id="adminKey" class="input-large" value="ADMIN-KEY-2025">
-                    
+
                     <button class="btn-large btn-success" onclick="saveConfig()">💾 保存配置</button>
                     <button class="btn-large" onclick="testConnection()">🔌 测试连接</button>
                 </div>
@@ -160,4 +174,5 @@
     <script src="admin.js"></script>
     <script src="mobile-menu.js"></script>
 </body>
+
 </html>
