@@ -1,5 +1,23 @@
-// 切换标签页
-function showTab(tabName) {
+// 页面初始化
+window.onload = () => {
+    // 根据 URL hash 恢复页面状态
+    const hash = window.location.hash.replace('#', '') || 'dashboard';
+    const validTabs = ['dashboard', 'licenses', 'review'];
+    const tabName = validTabs.includes(hash) ? hash : 'dashboard';
+    showTabByName(tabName);
+};
+
+// 监听浏览器前进后退
+window.onhashchange = () => {
+    const hash = window.location.hash.replace('#', '') || 'dashboard';
+    const validTabs = ['dashboard', 'licenses', 'review'];
+    if (validTabs.includes(hash)) {
+        showTabByName(hash);
+    }
+};
+
+// 内部切换标签页（不依赖 event）
+function showTabByName(tabName) {
     // 隐藏所有标签页
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -14,7 +32,8 @@ function showTab(tabName) {
     document.getElementById(tabName).classList.add('active');
 
     // 激活对应的导航项
-    event.currentTarget.classList.add('active');
+    const navItem = document.querySelector(`.nav-item[onclick*="'${tabName}'"]`);
+    if (navItem) navItem.classList.add('active');
 
     // 滚动到顶部
     window.scrollTo(0, 0);
@@ -29,6 +48,13 @@ function showTab(tabName) {
         loadApprovedIPs();
         loadRejectedIPs();
     }
+}
+
+// 切换标签页（用户点击导航时调用）
+function showTab(tabName) {
+    // 更新 URL hash
+    window.location.hash = tabName;
+    showTabByName(tabName);
 }
 
 // 重写显示统计数据的函数（移动端优化）
@@ -265,9 +291,12 @@ function displayPendingIPs(list) {
 
     let html = '';
     list.forEach(item => {
-        const taskInfo = `${item.taskCount || 0} / 8`;
-        const taskBadgeClass = (item.taskCount || 0) >= 8 ? 'badge-danger' : 'badge-info';
+        const taskCount = item.taskCount || 0;
+        const maxTasks = item.maxTasks || 10;
+        const taskInfo = `${taskCount} / ${maxTasks}`;
+        const taskBadgeClass = taskCount >= maxTasks ? 'badge-danger' : 'badge-info';
         const deviceIdShort = item.machineIdFull ? item.machineIdFull.substring(0, 8) + '...' : '-';
+        const licenseType = item.licenseType || '临时密钥';
         html += `
             <div class="list-item">
                 <div class="list-item-header">
@@ -278,6 +307,7 @@ function displayPendingIPs(list) {
                 <div class="list-item-info">🕐 激活时间: ${item.createdAt}</div>
                 <div class="list-item-info">⏰ 最后活跃: ${item.lastSeen || '-'}</div>
                 <div class="list-item-info">📊 任务次数: <span class="badge ${taskBadgeClass}">${taskInfo}</span></div>
+                <div class="list-item-info">🏷️ 类型: <span class="badge badge-secondary">${licenseType}</span></div>
                 <div class="list-item-actions">
                     <button class="btn-small btn-success" onclick="approveIPAction('${item.ip}')">✅ 通过</button>
                     <button class="btn-small btn-danger" onclick="rejectIPAction('${item.ip}')">❌ 拒绝</button>
