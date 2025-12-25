@@ -14,7 +14,8 @@
         <div class="login-box">
             <h2>🔐 管理后台登录</h2>
             <div class="login-form">
-                <input type="password" id="loginPassword" class="input-large" placeholder="请输入管理密码" onkeypress="if(event.key==='Enter')doLogin()">
+                <input type="password" id="loginPassword" class="input-large" placeholder="请输入管理密码"
+                    onkeypress="if(event.key==='Enter')doLogin()">
                 <button class="btn-large btn-primary" onclick="doLogin()">登录</button>
             </div>
             <p id="loginError" class="login-error"></p>
@@ -26,7 +27,6 @@
         <h1>🎛️ 管理后台</h1>
     </div>
 
-    <!-- 底部导航栏 -->
     <div class="bottom-nav">
         <div class="nav-item active" onclick="showTab('dashboard')">
             <div class="nav-icon">📊</div>
@@ -36,8 +36,12 @@
             <div class="nav-icon">🔑</div>
             <div class="nav-label">密钥</div>
         </div>
-        <div class="nav-item" onclick="showTab('devices')">
-            <div class="nav-icon">📱</div>
+        <div class="nav-item" onclick="showTab('ipManage')">
+            <div class="nav-icon">🌐</div>
+            <div class="nav-label">IP</div>
+        </div>
+        <div class="nav-item" onclick="showTab('deviceOverview')">
+            <div class="nav-icon">🖥️</div>
             <div class="nav-label">设备</div>
         </div>
         <div class="nav-item" onclick="showTab('review')">
@@ -133,6 +137,38 @@
                 </div>
             </div>
             <div id="devicesResult"></div>
+        </div>
+
+        <!-- IP 管理 -->
+        <div id="ipManage" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h2>🌐 所有 IP</h2>
+                    <button class="btn-refresh" onclick="loadAllIPs()">🔄</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="ipSearchKeyword" class="input-large" placeholder="搜索 IP 地址">
+                    <button class="btn-large" onclick="searchIPs()">🔍</button>
+                </div>
+                <div class="stats-container" id="ipStatsContainer"></div>
+                <div id="allIPsContainer"></div>
+            </div>
+        </div>
+
+        <!-- 设备总览 -->
+        <div id="deviceOverview" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h2>🖥️ 所有设备</h2>
+                    <button class="btn-refresh" onclick="loadAllDevices()">🔄</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="deviceSearchKeyword" class="input-large" placeholder="搜索设备 ID">
+                    <button class="btn-large" onclick="searchDevicesGlobal()">🔍</button>
+                </div>
+                <div class="stats-container" id="deviceStatsContainer"></div>
+                <div id="allDevicesContainer"></div>
+            </div>
         </div>
 
         <!-- 激活审核 -->
