@@ -198,36 +198,33 @@ window.onhashchange = () => {
 
 // 内部切换页面（不触发 hashchange）
 function showPageByName(pageName) {
-    document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    // 移动端底部导航栏
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => item.classList.remove('active'));
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
 
     // 激活对应的导航项
-    const navItem = document.querySelector(`.nav-item[href="#${pageName}"]`) ||
-        document.querySelector(`.nav-item[onclick*="'${pageName}'"]`);
-    if (navItem) navItem.classList.add('active');
+    const navItems = document.querySelectorAll('.bottom-nav .nav-item');
+    navItems.forEach(item => {
+        if (item.getAttribute('onclick')?.includes(pageName)) {
+            item.classList.add('active');
+        }
+    });
 
-    document.getElementById(pageName).classList.add('active');
+    const pageEl = document.getElementById(pageName);
+    if (pageEl) pageEl.classList.add('active');
 
     const titles = {
         dashboard: '仪表板',
         licenses: '密钥管理',
-        devices: '设备管理',
-        ipManage: 'IP 管理',
-        deviceOverview: '设备总览',
         review: '激活审核',
-        logs: '操作日志',
-        settings: '系统设置',
-        debug: '密钥调试'
+        settings: '系统设置'
     };
-    document.getElementById('pageTitle').textContent = titles[pageName];
+    document.getElementById('pageTitle').textContent = titles[pageName] || '管理后台';
 
     // 加载页面数据
     if (pageName === 'dashboard') loadDashboard();
     if (pageName === 'licenses') loadAllLicenses();
-    if (pageName === 'ipManage') loadAllIPs();
-    if (pageName === 'deviceOverview') loadAllDevices();
     if (pageName === 'review') { loadPendingIPs(); loadApprovedIPs(); loadRejectedIPs(); }
-    if (pageName === 'logs') loadLogs();
 }
 
 // 切换页面（用户点击导航时调用）
@@ -326,51 +323,44 @@ async function generateTempLicenses() {
         return;
     }
 
-    // 显示结果
-    let html = `<div class="card" style="background: #f0f9ff; border: 2px solid #0ea5e9;">
-        <div class="card-header" style="background: #0ea5e9; color: white;">
-            <h4>✅ 已生成并注册 ${count} 个临时密钥（5次任务，3小时）</h4>
-        </div>
-        <div class="card-body">
-            <p style="color: #0369a1; font-weight: bold;">请复制以下密钥发送给用户：</p>
-            <div style="background: white; padding: 15px; border-radius: 8px; margin: 10px 0;">`;
+    // 显示结果（移动端优化）
+    let html = `
+        <div class="card" style="background: #dbeafe; margin-top: 15px;">
+            <div class="card-header">
+                <h3>✅ 已生成 ${count} 个临时密钥</h3>
+            </div>
+            <div class="card-body">
+                <p class="hint" style="color: #1e40af; font-weight: 500;">💡 5次任务，3小时有效期</p>
+    `;
 
-    licenses.forEach((key, index) => {
-        html += `<div style="margin: 8px 0; padding: 10px; background: #f8fafc; border-left: 4px solid #0ea5e9; display: flex; justify-content: space-between; align-items: center;">
-            <span class="code" style="font-size: 16px; color: #0369a1;">${key}</span>
-            <button class="btn btn-sm" onclick="copyToClipboard('${key}')" style="background: #0ea5e9; color: white;">📋 复制</button>
-        </div>`;
+    licenses.forEach((key) => {
+        html += `
+            <div class="temp-license-item">
+                <span class="temp-license-key">${key}</span>
+                <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="copyToClipboard('${key}')">📋</button>
+            </div>
+        `;
     });
 
-    html += `</div>
-            <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
-                <p style="margin: 0; color: #92400e;"><strong>⚠️ 重要提示：</strong></p>
-                <ul style="margin: 10px 0; color: #92400e;">
-                    <li>这些密钥<strong>已注册到服务端</strong>，只有已注册的密钥才能使用</li>
-                    <li>请立即复制并发送给用户</li>
-                    <li>每个密钥只能使用 <strong>5 次任务</strong>，有效期 <strong>3 小时</strong></li>
-                    <li>用户使用后会出现在"激活审核"页面，你可以选择通过或拒绝</li>
-                </ul>
-            </div>
-            <div style="margin-top: 15px;">
-                <button class="btn btn-primary" onclick="copyAllTempLicenses()">📋 复制全部密钥</button>
-                <button class="btn" onclick="exportTempLicensesToFile()">💾 导出为文本文件</button>
+    html += `
+                <button class="btn btn-success btn-block" onclick="copyAllTempLicenses()">📋 复制全部</button>
+                <button class="btn btn-secondary btn-block" onclick="exportTempLicensesToFile()">💾 导出文件</button>
             </div>
         </div>
-    </div>`;
+    `;
 
     document.getElementById('tempLicensesResult').innerHTML = html;
 
     // 保存到临时变量供复制使用
     window.generatedTempLicenses = licenses;
 
-    showMessage(`成功生成并注册 ${count} 个临时密钥`, 'success');
+    showMessage(`成功生成 ${count} 个临时密钥`, 'success');
 }
 
 // 复制到剪贴板
 function copyToClipboard(text) {
     navigator.clipboard.writeText(text).then(() => {
-        showMessage('已复制到剪贴板', 'success');
+        showMessage('已复制', 'success');
     }).catch(() => {
         // 降级方案
         const textarea = document.createElement('textarea');
@@ -379,7 +369,7 @@ function copyToClipboard(text) {
         textarea.select();
         document.execCommand('copy');
         document.body.removeChild(textarea);
-        showMessage('已复制到剪贴板', 'success');
+        showMessage('已复制', 'success');
     });
 }
 
@@ -496,26 +486,30 @@ function displayStats(data) {
     `;
 }
 
-// 显示最近密钥
+// 显示最近密钥（移动端列表样式）
 function displayRecentLicenses(data) {
     if (!data.licenses || data.licenses.length === 0) {
         document.getElementById('recentLicenses').innerHTML = '<div class="loading">暂无数据</div>';
         return;
     }
 
-    let html = '<table><thead><tr><th>密钥</th><th>客户</th><th>设备</th><th>状态</th></tr></thead><tbody>';
+    let html = '';
     data.licenses.slice(0, 5).forEach(lic => {
         const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' :
             new Date(lic.expire) < new Date() ? '<span class="badge badge-warning">已过期</span>' :
                 '<span class="badge badge-success">正常</span>';
-        html += `<tr>
-            <td><span class="code">${lic.license}</span></td>
-            <td>${lic.customer}</td>
-            <td>${lic.devicesUsed} / ${lic.maxDevices}</td>
-            <td>${status}</td>
-        </tr>`;
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <span class="code">${lic.license}</span>
+                    ${status}
+                </div>
+                <div class="list-item-meta">
+                    👤 ${lic.customer} | 📱 ${lic.devicesUsed}/${lic.maxDevices} 台设备
+                </div>
+            </div>
+        `;
     });
-    html += '</tbody></table>';
     document.getElementById('recentLicenses').innerHTML = html;
 }
 
@@ -562,45 +556,45 @@ async function loadAllLicenses(page = 1) {
     }
 }
 
-// 显示所有密钥
+// 显示所有密钥（移动端列表样式）
 function displayAllLicenses(data) {
     if (!data.licenses || data.licenses.length === 0) {
         document.getElementById('allLicenses').innerHTML = '<div class="loading">暂无数据</div>';
         return;
     }
 
-    let html = '<table><thead><tr><th>密钥</th><th>客户</th><th>过期时间</th><th>设备</th><th>状态</th><th>IP绑定</th><th>操作</th></tr></thead><tbody>';
-    data.licenses.forEach(lic => {
+    let html = '';
+    // 移动端只显示前20条
+    data.licenses.slice(0, 20).forEach(lic => {
         const isExpired = new Date(lic.expire) < new Date();
         const status = lic.isBanned ? '<span class="badge badge-danger">已封禁</span>' :
             isExpired ? '<span class="badge badge-warning">已过期</span>' :
                 '<span class="badge badge-success">正常</span>';
 
-        // IP 绑定状态
-        const ipStatus = lic.ipBindingEnabled ?
-            `<span class="badge badge-info" title="${(lic.allowedIPs || []).join(', ')}">🔒 ${(lic.allowedIPs || []).length} IP</span>` :
-            '<span class="badge badge-secondary">未启用</span>';
-
-        const banBtn = lic.isBanned ?
-            `<button class="btn btn-success btn-sm" onclick="unbanLicenseAction('${lic.license}')">解封</button>` :
-            `<button class="btn btn-warning btn-sm" onclick="banLicenseAction('${lic.license}')">封禁</button>`;
-
-        html += `<tr>
-            <td><span class="code">${lic.license}</span></td>
-            <td>${lic.customer}</td>
-            <td>${lic.expire}</td>
-            <td>${lic.devicesUsed} / ${lic.maxDevices}</td>
-            <td>${status}</td>
-            <td>${ipStatus}</td>
-            <td>
-                <button class="btn btn-sm" onclick="editLicense('${lic.license}')">编辑</button>
-                <button class="btn btn-sm" onclick="manageIPBindingFromList('${lic.license}')">🔒</button>
-                ${banBtn}
-                <button class="btn btn-danger btn-sm" onclick="deleteLicense('${lic.license}')">删除</button>
-            </td>
-        </tr>`;
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <span class="code">${lic.license}</span>
+                    ${status}
+                </div>
+                <div class="list-item-meta">
+                    👤 ${lic.customer} | 📱 ${lic.devicesUsed}/${lic.maxDevices}
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn btn-secondary" onclick="editLicense('${lic.license}')">✏️ 编辑</button>
+                    ${lic.isBanned ? 
+                        `<button class="btn btn-success" onclick="unbanLicenseAction('${lic.license}')">解封</button>` :
+                        `<button class="btn btn-danger" onclick="deleteLicense('${lic.license}')">删除</button>`
+                    }
+                </div>
+            </div>
+        `;
     });
-    html += '</tbody></table>';
+    
+    if (data.licenses.length > 20) {
+        html += `<div class="hint" style="padding: 15px; text-align: center;">仅显示前 20 条，共 ${data.total} 条</div>`;
+    }
+    
     document.getElementById('allLicenses').innerHTML = html;
 }
 
@@ -1441,59 +1435,42 @@ async function loadPendingIPs(page = 1) {
     }
 }
 
-// 显示待审核 IP
+// 显示待审核 IP（移动端列表样式）
 function displayPendingIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('pendingIPsContainer').innerHTML = '<div class="loading">暂无待审核的激活请求</div>';
         return;
     }
 
-    // 分页
-    const total = list.length;
-    const start = (page - 1) * reviewPageSize;
-    const end = start + reviewPageSize;
-    const pageData = list.slice(start, end);
+    // 简化分页，移动端只显示前20条
+    const pageData = list.slice(0, 20);
 
-    let html = '<table><thead><tr><th>IP 地址</th><th>设备 ID</th><th>激活时间</th><th>最后活跃</th><th>任务次数</th><th>剩余时间</th><th>类型</th><th>订单号</th><th>操作</th></tr></thead><tbody>';
+    let html = '';
     pageData.forEach(item => {
         const taskCount = item.taskCount || 0;
         const maxTasks = item.maxTasks || 10;
-        const taskInfo = `${taskCount} / ${maxTasks}`;
         const taskBadge = taskCount >= maxTasks ? 'badge-danger' : 'badge-info';
         const deviceIdShort = item.machineIdFull ? item.machineIdFull.substring(0, 8) + '...' : '-';
-        const licenseType = item.licenseType || '临时密钥';
-        const contactInfo = item.contact_info || '-';
-        html += `<tr>
-            <td><span class="code">${item.ip}</span></td>
-            <td><span class="code" title="${item.machineIdFull || ''}">${deviceIdShort}</span></td>
-            <td>${item.createdAt}</td>
-            <td>${item.lastSeen || '-'}</td>
-            <td><span class="badge ${taskBadge}">${taskInfo}</span></td>
-            <td><span class="badge badge-warning">${item.remaining}</span></td>
-            <td><span class="badge badge-secondary">${licenseType}</span></td>
-            <td><span class="code" title="${contactInfo}">${contactInfo}</span></td>
-            <td>
-                <button class="btn btn-success btn-sm" onclick="approveIPAction('${item.ip}')">✅ 通过</button>
-                <button class="btn btn-danger btn-sm" onclick="rejectIPAction('${item.ip}')">❌ 拒绝</button>
-            </td>
-        </tr>`;
+        
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <span class="code">${item.ip}</span>
+                    <span class="badge ${taskBadge}">${taskCount}/${maxTasks}</span>
+                </div>
+                <div class="list-item-meta">
+                    🖥️ ${deviceIdShort} | ⏰ ${item.remaining}
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn btn-success" onclick="approveIPAction('${item.ip}')">✅ 通过</button>
+                    <button class="btn btn-danger" onclick="rejectIPAction('${item.ip}')">❌ 拒绝</button>
+                </div>
+            </div>
+        `;
     });
-    html += '</tbody></table>';
     
-    // 分页控件
-    const totalPages = Math.ceil(total / reviewPageSize);
-    if (totalPages > 1) {
-        html += '<div class="pagination" style="margin-top: 20px;">';
-        if (page > 1) {
-            html += `<button class="btn btn-sm" onclick="loadPendingIPs(${page - 1})">上一页</button>`;
-        }
-        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
-        if (page < totalPages) {
-            html += `<button class="btn btn-sm" onclick="loadPendingIPs(${page + 1})">下一页</button>`;
-        }
-        html += '</div>';
-    } else {
-        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个待审核 IP</div>`;
+    if (list.length > 20) {
+        html += `<div class="hint" style="padding: 15px; text-align: center;">仅显示前 20 条，共 ${list.length} 条</div>`;
     }
     
     document.getElementById('pendingIPsContainer').innerHTML = html;
@@ -1539,64 +1516,42 @@ async function loadApprovedIPs(page = 1) {
     }
 }
 
-// 显示已通过 IP
+// 显示已通过 IP（移动端列表样式）
 function displayApprovedIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('approvedIPsContainer').innerHTML = '<div class="loading">暂无已通过的 IP</div>';
         return;
     }
 
-    console.log('displayApprovedIPs - 开始渲染，数据条数:', list.length);
-    console.log('displayApprovedIPs - 第一条数据:', list[0]);
-    console.log('displayApprovedIPs - 第一条数据类型:', typeof list[0]);
+    // 简化分页，移动端只显示前20条
+    const pageData = list.slice(0, 20);
 
-    // 分页
-    const total = list.length;
-    const start = (page - 1) * reviewPageSize;
-    const end = start + reviewPageSize;
-    const pageData = list.slice(start, end);
-
-    let html = '<table><thead><tr><th>IP 地址</th><th>设备 ID</th><th>通过时间</th><th>最近操作</th><th>操作</th></tr></thead><tbody>';
-    pageData.forEach((item, index) => {
+    let html = '';
+    pageData.forEach((item) => {
         // 兼容旧格式（字符串）和新格式（对象）
         const ip = typeof item === 'string' ? item : (item.ip || '');
         const machineId = typeof item === 'object' ? (item.machineId || '') : '';
         const approvedAt = typeof item === 'object' ? (item.approvedAt || '-') : '-';
-        const lastSeen = typeof item === 'object' ? (item.lastSeen || '-') : '-';
-
-        if (index === 0) {
-            console.log('displayApprovedIPs - 解析后的数据:', { ip, machineId, approvedAt, lastSeen });
-        }
-
-        // 设备 ID 显示：如果有值则显示前8位，否则显示 -
         const machineIdDisplay = machineId ? machineId.substring(0, 8) + '...' : '-';
 
-        html += `<tr>
-            <td><span class="code">${ip}</span></td>
-            <td><span class="code" title="${machineId}">${machineIdDisplay}</span></td>
-            <td>${approvedAt}</td>
-            <td>${lastSeen}</td>
-            <td>
-                <button class="btn btn-danger btn-sm" onclick="removeApprovedIPAction('${ip}')">🗑️ 移除</button>
-            </td>
-        </tr>`;
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <span class="code">${ip}</span>
+                    <span class="badge badge-success">已授权</span>
+                </div>
+                <div class="list-item-meta">
+                    🖥️ ${machineIdDisplay} | 📅 ${approvedAt}
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn btn-danger" onclick="removeApprovedIPAction('${ip}')">🗑️ 移除</button>
+                </div>
+            </div>
+        `;
     });
-    html += '</tbody></table>';
     
-    // 分页控件
-    const totalPages = Math.ceil(total / reviewPageSize);
-    if (totalPages > 1) {
-        html += '<div class="pagination" style="margin-top: 20px;">';
-        if (page > 1) {
-            html += `<button class="btn btn-sm" onclick="loadApprovedIPs(${page - 1})">上一页</button>`;
-        }
-        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
-        if (page < totalPages) {
-            html += `<button class="btn btn-sm" onclick="loadApprovedIPs(${page + 1})">下一页</button>`;
-        }
-        html += '</div>';
-    } else {
-        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个已授权 IP</div>`;
+    if (list.length > 20) {
+        html += `<div class="hint" style="padding: 15px; text-align: center;">仅显示前 20 条，共 ${list.length} 条</div>`;
     }
     
     document.getElementById('approvedIPsContainer').innerHTML = html;
@@ -1627,44 +1582,33 @@ async function loadRejectedIPs(page = 1) {
     }
 }
 
-// 显示被拒绝 IP
+// 显示被拒绝 IP（移动端列表样式）
 function displayRejectedIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('rejectedIPsContainer').innerHTML = '<div class="loading">暂无被拒绝的 IP</div>';
         return;
     }
 
-    // 分页
-    const total = list.length;
-    const start = (page - 1) * reviewPageSize;
-    const end = start + reviewPageSize;
-    const pageData = list.slice(start, end);
+    // 简化分页，移动端只显示前20条
+    const pageData = list.slice(0, 20);
 
-    let html = '<table><thead><tr><th>IP 地址</th><th>操作</th></tr></thead><tbody>';
+    let html = '';
     pageData.forEach(ip => {
-        html += `<tr>
-            <td><span class="code">${ip}</span></td>
-            <td>
-                <button class="btn btn-success btn-sm" onclick="unrejectIPAction('${ip}')">🔄 恢复</button>
-            </td>
-        </tr>`;
+        html += `
+            <div class="list-item">
+                <div class="list-item-header">
+                    <span class="code">${ip}</span>
+                    <span class="badge badge-danger">已拒绝</span>
+                </div>
+                <div class="list-item-actions">
+                    <button class="btn btn-success" onclick="unrejectIPAction('${ip}')">🔄 恢复</button>
+                </div>
+            </div>
+        `;
     });
-    html += '</tbody></table>';
     
-    // 分页控件
-    const totalPages = Math.ceil(total / reviewPageSize);
-    if (totalPages > 1) {
-        html += '<div class="pagination" style="margin-top: 20px;">';
-        if (page > 1) {
-            html += `<button class="btn btn-sm" onclick="loadRejectedIPs(${page - 1})">上一页</button>`;
-        }
-        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
-        if (page < totalPages) {
-            html += `<button class="btn btn-sm" onclick="loadRejectedIPs(${page + 1})">下一页</button>`;
-        }
-        html += '</div>';
-    } else {
-        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个被拒绝 IP</div>`;
+    if (list.length > 20) {
+        html += `<div class="hint" style="padding: 15px; text-align: center;">仅显示前 20 条，共 ${list.length} 条</div>`;
     }
     
     document.getElementById('rejectedIPsContainer').innerHTML = html;
