@@ -1,6 +1,6 @@
-// 配置
+// 配置（API地址已写死，不可修改）
+const API_URL = 'https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com';
 let config = {
-    apiUrl: 'https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com',
     adminKey: 'ADMIN-KEY-2025'
 };
 
@@ -165,15 +165,8 @@ async function initApp() {
     const saved = localStorage.getItem('adminConfig');
     if (saved) {
         const savedConfig = JSON.parse(saved);
-        // 如果保存的是旧地址，使用新地址覆盖
-        if (savedConfig.apiUrl && !savedConfig.apiUrl.includes('tencentscf.com')) {
-            config.apiUrl = 'https://1340181402-3thvnndcwl.ap-guangzhou.tencentscf.com';
-            localStorage.setItem('adminConfig', JSON.stringify(config));
-        } else {
-            config = savedConfig;
-        }
+        config.adminKey = savedConfig.adminKey || config.adminKey;
     }
-    document.getElementById('apiUrl').value = config.apiUrl;
     document.getElementById('adminKey').value = config.adminKey;
 
     // 加载全局用户数据
@@ -266,7 +259,7 @@ function showMessage(text, type = 'success') {
 // API 请求
 async function apiRequest(action, data = {}) {
     try {
-        const response = await fetch(config.apiUrl, {
+        const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action, adminKey: config.adminKey, ...data })
@@ -278,7 +271,7 @@ async function apiRequest(action, data = {}) {
     }
 }
 
-// 生成密钥 (正式密钥使用 EMAIL- 前缀)
+// 生成密钥
 function generateLicense() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     const parts = [];
@@ -289,7 +282,7 @@ function generateLicense() {
         }
         parts.push(part);
     }
-    return 'EMAIL-' + parts.join('-');
+    return 'ZSXQ-' + parts.join('-');
 }
 
 function generateNewLicense() {
@@ -317,10 +310,10 @@ async function generateTempLicenses() {
     const numbers = numberResult.data.numbers;
     const licenses = [];
 
-    // 生成简洁的递增密钥：EMAIL-0001
+    // 生成简洁的递增密钥：ZSXQ-8888-0001
     for (let i = 0; i < count; i++) {
         const paddedNum = numbers[i].toString().padStart(4, '0');
-        const uniqueKey = `EMAIL-${paddedNum}`;
+        const uniqueKey = `ZSXQ-8888-${paddedNum}`;
         licenses.push(uniqueKey);
     }
 
@@ -336,7 +329,7 @@ async function generateTempLicenses() {
     // 显示结果
     let html = `<div class="card" style="background: #f0f9ff; border: 2px solid #0ea5e9;">
         <div class="card-header" style="background: #0ea5e9; color: white;">
-            <h4>✅ 已生成并注册 ${count} 个试用密钥（3次任务，3小时）</h4>
+            <h4>✅ 已生成并注册 ${count} 个临时密钥（5次任务，3小时）</h4>
         </div>
         <div class="card-body">
             <p style="color: #0369a1; font-weight: bold;">请复制以下密钥发送给用户：</p>
@@ -353,9 +346,10 @@ async function generateTempLicenses() {
             <div style="margin-top: 15px; padding: 15px; background: #fef3c7; border-radius: 8px; border-left: 4px solid #f59e0b;">
                 <p style="margin: 0; color: #92400e;"><strong>⚠️ 重要提示：</strong></p>
                 <ul style="margin: 10px 0; color: #92400e;">
-                    <li>试用密钥<strong>绑定单一设备</strong>，换设备需要新密钥</li>
-                    <li>每个密钥可使用 <strong>3 次任务</strong>，有效期 <strong>3 小时</strong></li>
-                    <li>用户使用后会出现在"激活审核"页面，审核通过后可永久使用</li>
+                    <li>这些密钥<strong>已注册到服务端</strong>，只有已注册的密钥才能使用</li>
+                    <li>请立即复制并发送给用户</li>
+                    <li>每个密钥只能使用 <strong>5 次任务</strong>，有效期 <strong>3 小时</strong></li>
+                    <li>用户使用后会出现在"激活审核"页面，你可以选择通过或拒绝</li>
                 </ul>
             </div>
             <div style="margin-top: 15px;">
@@ -407,9 +401,9 @@ function exportTempLicensesToFile() {
         return;
     }
 
-    let content = `知识星球助手 - 试用密钥\n`;
+    let content = `知识星球助手 - 临时密钥\n`;
     content += `生成时间：${new Date().toLocaleString('zh-CN')}\n`;
-    content += `密钥类型：3次任务，3小时有效期\n`;
+    content += `密钥类型：5次任务，3小时有效期\n`;
     content += `密钥数量：${window.generatedTempLicenses.length}\n`;
     content += `\n${'='.repeat(50)}\n\n`;
 
@@ -420,10 +414,9 @@ function exportTempLicensesToFile() {
     content += `\n${'='.repeat(50)}\n`;
     content += `\n使用说明：\n`;
     content += `1. 每个密钥独立使用，互不影响\n`;
-    content += `2. 每个密钥最多使用 3 次任务，有效期 3 小时\n`;
+    content += `2. 每个密钥最多使用 5 次任务，有效期 3 小时\n`;
     content += `3. 用完次数或过期后自动失效\n`;
-    content += `4. 使用后会出现在管理员审核列表，审核通过后可永久使用\n`;
-    content += `5. 如需长期使用，请联系管理员获取正式授权\n`;
+    content += `4. 如需长期使用，请联系管理员获取正式授权\n`;
     content += `\n联系方式：微信号 YOLO_SepFive\n`;
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
@@ -451,7 +444,6 @@ function formatTime(time) {
 
 // 保存配置
 function saveConfig() {
-    config.apiUrl = document.getElementById('apiUrl').value.trim();
     config.adminKey = document.getElementById('adminKey').value.trim();
     localStorage.setItem('adminConfig', JSON.stringify(config));
     showMessage('配置已保存', 'success');
@@ -551,8 +543,8 @@ async function registerLicense() {
 
     if (result.success) {
         showMessage('密钥注册成功！客户首次激活时会自动绑定 IP', 'success');
+        document.getElementById('customer').value = '星球助手';
         document.getElementById('newLicense').value = '';
-        document.getElementById('customer').value = '';
         loadAllLicenses();
     } else {
         showMessage(result.error || '注册失败', 'error');
@@ -896,14 +888,74 @@ function showImportDialog() {
 // 加载操作日志
 let currentLogsPage = 1;
 const logsPageSize = 50;
+let currentIPFilter = ''; // 当前 IP 过滤条件
+
 async function loadLogs(page = 1) {
     currentLogsPage = page;
 
-    const logsResult = await apiRequest('getLogs', { page: page, pageSize: logsPageSize });
+    const params = { page: page, pageSize: logsPageSize };
+    
+    // 如果有 IP 过滤条件，添加到请求参数
+    if (currentIPFilter) {
+        params.ip = currentIPFilter;
+    }
+
+    const logsResult = await apiRequest('getLogs', params);
 
     if (logsResult.success) {
         displayLogs(logsResult.data, logsResult.total || 0);
+        
+        // 显示搜索信息
+        if (currentIPFilter) {
+            document.getElementById('logsSearchInfo').style.display = 'block';
+            document.getElementById('logsSearchText').textContent = `🔍 正在显示 IP: ${currentIPFilter} 的操作记录 (共 ${logsResult.total || 0} 条)`;
+        } else {
+            document.getElementById('logsSearchInfo').style.display = 'none';
+        }
     }
+}
+
+// 按 IP 搜索日志
+async function searchLogsByIP() {
+    const ip = document.getElementById('ipSearchInput').value.trim();
+    
+    if (!ip) {
+        showMessage('请输入 IP 地址', 'error');
+        return;
+    }
+    
+    // 简单的 IP 格式验证
+    const ipPattern = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipPattern.test(ip)) {
+        showMessage('请输入有效的 IP 地址格式 (例如: 192.168.1.1)', 'error');
+        return;
+    }
+    
+    currentIPFilter = ip;
+    currentLogsPage = 1;
+    await loadLogs(1);
+    showMessage(`正在搜索 IP: ${ip} 的操作记录`, 'success');
+}
+
+// 清除 IP 搜索
+async function clearIPSearch() {
+    currentIPFilter = '';
+    document.getElementById('ipSearchInput').value = '';
+    document.getElementById('logsSearchInfo').style.display = 'none';
+    currentLogsPage = 1;
+    await loadLogs(1);
+    showMessage('已清除搜索条件', 'success');
+}
+
+// 快速搜索 IP（从日志列表中点击）
+async function quickSearchIP(ip) {
+    document.getElementById('ipSearchInput').value = ip;
+    currentIPFilter = ip;
+    currentLogsPage = 1;
+    await loadLogs(1);
+    showMessage(`正在搜索 IP: ${ip} 的操作记录`, 'success');
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // 显示操作日志
@@ -914,7 +966,7 @@ function displayLogs(logs, total) {
         return;
     }
 
-    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>用户名</th><th>密钥</th><th>设备ID</th><th>IP</th></tr></thead><tbody>';
+    let html = '<table><thead><tr><th>时间</th><th>操作</th><th>功能</th><th>用户名</th><th>密钥</th><th>设备ID</th><th>IP</th></tr></thead><tbody>';
 
     // 调试：打印第一条日志和缓存内容
     if (logs.length > 0) {
@@ -936,19 +988,33 @@ function displayLogs(logs, total) {
         const machineIdDisplay = log.machineId ? log.machineId.substring(0, 8) + '...' : '-';
         const machineIdTitle = log.machineId || '';
 
-        // 用户名优先级：日志中的note > IP 备注/用户名 > 设备 ID 用户名 > 默认
-        let userName = log.note || getUserNameByIP(log.ip) || getUserNameByMachineId(log.machineId) || '-';
+        // 用户名优先级：IP 备注/用户名 > 设备 ID 用户名 > 默认
+        let userName = getUserNameByIP(log.ip) || getUserNameByMachineId(log.machineId) || '-';
         if (userName !== '-') {
             userName = `<strong>${userName}</strong>`;
+        }
+
+        // 功能名称
+        const featureName = log.feature || '-';
+
+        // IP 列：显示 IP + 快速搜索按钮
+        let ipCell = '-';
+        if (log.ip) {
+            ipCell = `<span class="code">${log.ip}</span>`;
+            // 如果当前不是在搜索这个 IP，显示搜索按钮
+            if (currentIPFilter !== log.ip) {
+                ipCell += ` <button class="btn btn-sm" onclick="quickSearchIP('${log.ip}')" title="搜索此IP的所有记录" style="padding: 2px 6px; font-size: 11px;">🔍</button>`;
+            }
         }
 
         html += `<tr>
             <td>${log.timestamp}</td>
             <td>${log.action}</td>
+            <td>${featureName}</td>
             <td>${userName}</td>
             <td><span class="code">${log.license || '-'}</span></td>
             <td>${log.machineId ? '<span class="code" title="' + machineIdTitle + '">' + machineIdDisplay + '</span>' : '-'}</td>
-            <td><span class="code">${log.ip || '-'}</span></td>
+            <td>${ipCell}</td>
         </tr>`;
     });
     html += '</tbody></table>';
@@ -1359,28 +1425,37 @@ async function setIPWhitelistFromList(license, currentEnabled) {
 
 // ==================== 激活审核功能 ====================
 
+let currentPendingPage = 1;
+let currentApprovedPage = 1;
+let currentRejectedPage = 1;
+const reviewPageSize = 20;
+
 // 加载待审核 IP 列表
-async function loadPendingIPs() {
+async function loadPendingIPs(page = 1) {
+    currentPendingPage = page;
     const result = await apiRequest('listPendingIPs', {});
-    console.log('loadPendingIPs result:', result); // 调试信息
     if (result.success) {
-        displayPendingIPs(result.data);
+        displayPendingIPs(result.data, page);
     } else {
-        const errorMsg = result.error || '未知错误';
-        console.error('加载待审核IP失败:', errorMsg); // 调试信息
-        document.getElementById('pendingIPsContainer').innerHTML = `<div class="loading">加载失败: ${errorMsg}</div>`;
+        document.getElementById('pendingIPsContainer').innerHTML = '<div class="loading">加载失败</div>';
     }
 }
 
 // 显示待审核 IP
-function displayPendingIPs(list) {
+function displayPendingIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('pendingIPsContainer').innerHTML = '<div class="loading">暂无待审核的激活请求</div>';
         return;
     }
 
-    let html = '<table><thead><tr><th>IP 地址</th><th>密钥</th><th>设备 ID</th><th>激活时间</th><th>最后活跃</th><th>任务次数</th><th>剩余时间</th><th>类型</th><th>订单号</th><th>操作</th></tr></thead><tbody>';
-    list.forEach(item => {
+    // 分页
+    const total = list.length;
+    const start = (page - 1) * reviewPageSize;
+    const end = start + reviewPageSize;
+    const pageData = list.slice(start, end);
+
+    let html = '<table><thead><tr><th>IP 地址</th><th>设备 ID</th><th>激活时间</th><th>最后活跃</th><th>任务次数</th><th>剩余时间</th><th>类型</th><th>订单号</th><th>操作</th></tr></thead><tbody>';
+    pageData.forEach(item => {
         const taskCount = item.taskCount || 0;
         const maxTasks = item.maxTasks || 10;
         const taskInfo = `${taskCount} / ${maxTasks}`;
@@ -1390,7 +1465,6 @@ function displayPendingIPs(list) {
         const contactInfo = item.contact_info || '-';
         html += `<tr>
             <td><span class="code">${item.ip}</span></td>
-            <td><span class="code">${item.license || '-'}</span></td>
             <td><span class="code" title="${item.machineIdFull || ''}">${deviceIdShort}</span></td>
             <td>${item.createdAt}</td>
             <td>${item.lastSeen || '-'}</td>
@@ -1405,6 +1479,23 @@ function displayPendingIPs(list) {
         </tr>`;
     });
     html += '</tbody></table>';
+    
+    // 分页控件
+    const totalPages = Math.ceil(total / reviewPageSize);
+    if (totalPages > 1) {
+        html += '<div class="pagination" style="margin-top: 20px;">';
+        if (page > 1) {
+            html += `<button class="btn btn-sm" onclick="loadPendingIPs(${page - 1})">上一页</button>`;
+        }
+        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
+        if (page < totalPages) {
+            html += `<button class="btn btn-sm" onclick="loadPendingIPs(${page + 1})">下一页</button>`;
+        }
+        html += '</div>';
+    } else {
+        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个待审核 IP</div>`;
+    }
+    
     document.getElementById('pendingIPsContainer').innerHTML = html;
 }
 
@@ -1415,21 +1506,6 @@ async function approveIPAction(ip) {
     const result = await apiRequest('approveIP', { ip });
     if (result.success) {
         showMessage(`IP ${ip} 已通过审核`, 'success');
-        loadPendingIPs();
-        loadApprovedIPs();
-    } else {
-        showMessage(result.error || '操作失败', 'error');
-    }
-}
-
-// 批量审核通过所有待审核IP
-async function approveAllIPsAction() {
-    if (!confirm(`确定要批量通过所有待审核的IP吗？\n\n通过后这些 IP 和设备ID 可永久使用插件。`)) return;
-
-    showMessage('正在批量审核...', 'success');
-    const result = await apiRequest('approveAllIPs', {});
-    if (result.success) {
-        showMessage(`已批量通过 ${result.data.count} 个IP`, 'success');
         loadPendingIPs();
         loadApprovedIPs();
     } else {
@@ -1451,19 +1527,20 @@ async function rejectIPAction(ip) {
 }
 
 // 加载已通过 IP 列表
-async function loadApprovedIPs() {
+async function loadApprovedIPs(page = 1) {
+    currentApprovedPage = page;
     const result = await apiRequest('listApprovedIPs', {});
     console.log('loadApprovedIPs result:', result); // 调试信息
     if (result.success) {
         console.log('Approved IPs data:', result.data); // 调试信息
-        displayApprovedIPs(result.data);
+        displayApprovedIPs(result.data, page);
     } else {
         document.getElementById('approvedIPsContainer').innerHTML = '<div class="loading">加载失败</div>';
     }
 }
 
 // 显示已通过 IP
-function displayApprovedIPs(list) {
+function displayApprovedIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('approvedIPsContainer').innerHTML = '<div class="loading">暂无已通过的 IP</div>';
         return;
@@ -1473,8 +1550,14 @@ function displayApprovedIPs(list) {
     console.log('displayApprovedIPs - 第一条数据:', list[0]);
     console.log('displayApprovedIPs - 第一条数据类型:', typeof list[0]);
 
+    // 分页
+    const total = list.length;
+    const start = (page - 1) * reviewPageSize;
+    const end = start + reviewPageSize;
+    const pageData = list.slice(start, end);
+
     let html = '<table><thead><tr><th>IP 地址</th><th>设备 ID</th><th>通过时间</th><th>最近操作</th><th>操作</th></tr></thead><tbody>';
-    list.forEach((item, index) => {
+    pageData.forEach((item, index) => {
         // 兼容旧格式（字符串）和新格式（对象）
         const ip = typeof item === 'string' ? item : (item.ip || '');
         const machineId = typeof item === 'object' ? (item.machineId || '') : '';
@@ -1499,7 +1582,23 @@ function displayApprovedIPs(list) {
         </tr>`;
     });
     html += '</tbody></table>';
-    html += `<div class="hint" style="margin-top: 10px;">共 ${list.length} 个已授权 IP</div>`;
+    
+    // 分页控件
+    const totalPages = Math.ceil(total / reviewPageSize);
+    if (totalPages > 1) {
+        html += '<div class="pagination" style="margin-top: 20px;">';
+        if (page > 1) {
+            html += `<button class="btn btn-sm" onclick="loadApprovedIPs(${page - 1})">上一页</button>`;
+        }
+        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
+        if (page < totalPages) {
+            html += `<button class="btn btn-sm" onclick="loadApprovedIPs(${page + 1})">下一页</button>`;
+        }
+        html += '</div>';
+    } else {
+        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个已授权 IP</div>`;
+    }
+    
     document.getElementById('approvedIPsContainer').innerHTML = html;
 }
 
@@ -1518,24 +1617,31 @@ async function removeApprovedIPAction(ip) {
 
 
 // 加载被拒绝 IP 列表
-async function loadRejectedIPs() {
+async function loadRejectedIPs(page = 1) {
+    currentRejectedPage = page;
     const result = await apiRequest('listRejectedIPs', {});
     if (result.success) {
-        displayRejectedIPs(result.data);
+        displayRejectedIPs(result.data, page);
     } else {
         document.getElementById('rejectedIPsContainer').innerHTML = '<div class="loading">加载失败</div>';
     }
 }
 
 // 显示被拒绝 IP
-function displayRejectedIPs(list) {
+function displayRejectedIPs(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('rejectedIPsContainer').innerHTML = '<div class="loading">暂无被拒绝的 IP</div>';
         return;
     }
 
+    // 分页
+    const total = list.length;
+    const start = (page - 1) * reviewPageSize;
+    const end = start + reviewPageSize;
+    const pageData = list.slice(start, end);
+
     let html = '<table><thead><tr><th>IP 地址</th><th>操作</th></tr></thead><tbody>';
-    list.forEach(ip => {
+    pageData.forEach(ip => {
         html += `<tr>
             <td><span class="code">${ip}</span></td>
             <td>
@@ -1544,7 +1650,23 @@ function displayRejectedIPs(list) {
         </tr>`;
     });
     html += '</tbody></table>';
-    html += `<div class="hint" style="margin-top: 10px;">共 ${list.length} 个被拒绝 IP</div>`;
+    
+    // 分页控件
+    const totalPages = Math.ceil(total / reviewPageSize);
+    if (totalPages > 1) {
+        html += '<div class="pagination" style="margin-top: 20px;">';
+        if (page > 1) {
+            html += `<button class="btn btn-sm" onclick="loadRejectedIPs(${page - 1})">上一页</button>`;
+        }
+        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个)</span>`;
+        if (page < totalPages) {
+            html += `<button class="btn btn-sm" onclick="loadRejectedIPs(${page + 1})">下一页</button>`;
+        }
+        html += '</div>';
+    } else {
+        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个被拒绝 IP</div>`;
+    }
+    
     document.getElementById('rejectedIPsContainer').innerHTML = html;
 }
 
@@ -1637,7 +1759,7 @@ function initDebugData() {
 // 获取调试配置
 function getDebugConfig() {
     return {
-        apiUrl: document.getElementById('debugApiUrl')?.value || config.apiUrl,
+        apiUrl: API_URL,
         adminKey: document.getElementById('debugAdminKey')?.value || config.adminKey
     };
 }
@@ -1853,7 +1975,7 @@ async function debugTestWithCustomData(ip, device, license, action = 'validate')
 // 测试存量IP（激活）
 async function debugTestExistingIP() {
     const ip = document.getElementById('debugExistingIP').value;
-    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'EMAIL-TEST';
+    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'ZSXQ-RANDOM-TEST';
 
     if (!ip) {
         showMessage('请先选择一个存量IP', 'error');
@@ -1876,7 +1998,7 @@ async function debugTestExistingIP() {
 // 测试存量IP（开始任务）
 async function debugTestExistingIPStartTask() {
     const ip = document.getElementById('debugExistingIP').value;
-    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'EMAIL-TEST';
+    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'ZSXQ-RANDOM-TEST';
 
     if (!ip) {
         showMessage('请先选择一个存量IP', 'error');
@@ -1899,7 +2021,7 @@ async function debugTestExistingIPStartTask() {
 // 测试存量设备（激活）
 async function debugTestExistingDevice() {
     const device = document.getElementById('debugExistingDevice').value;
-    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'EMAIL-TEST';
+    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'ZSXQ-RANDOM-TEST';
 
     if (!device) {
         showMessage('请先选择一个存量设备ID', 'error');
@@ -1922,7 +2044,7 @@ async function debugTestExistingDevice() {
 // 测试存量设备（开始任务）
 async function debugTestExistingDeviceStartTask() {
     const device = document.getElementById('debugExistingDevice').value;
-    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'EMAIL-TEST';
+    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'ZSXQ-RANDOM-TEST';
 
     if (!device) {
         showMessage('请先选择一个存量设备ID', 'error');
@@ -1946,7 +2068,7 @@ async function debugTestExistingDeviceStartTask() {
 async function debugTestExistingBoth() {
     const ip = document.getElementById('debugExistingIP').value;
     const device = document.getElementById('debugExistingDevice').value;
-    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'EMAIL-TEST';
+    const license = document.getElementById('debugExistingTestLicense').value.trim() || 'ZSXQ-RANDOM-TEST';
 
     if (!ip && !device) {
         showMessage('请至少选择一个存量IP或设备ID', 'error');
@@ -2116,9 +2238,12 @@ async function debugGetLogs() {
 
 // 缓存所有 IP 数据
 let allIPsCache = [];
+let currentIPPage = 1;
+const ipPageSize = 20;
 
 // 加载所有 IP
-async function loadAllIPs() {
+async function loadAllIPs(page = 1) {
+    currentIPPage = page;
     document.getElementById('allIPsContainer').innerHTML = '<div class="loading">正在加载...</div>';
 
     // 并行加载三个列表
@@ -2204,7 +2329,7 @@ async function loadAllIPs() {
     });
 
     displayIPStats();
-    displayAllIPsList(allIPsCache);
+    displayAllIPsList(allIPsCache, page);
 }
 
 // 显示 IP 统计
@@ -2234,15 +2359,21 @@ function displayIPStats() {
 }
 
 // 显示 IP 列表
-function displayAllIPsList(list) {
+function displayAllIPsList(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('allIPsContainer').innerHTML = '<div class="loading">暂无 IP 数据</div>';
         return;
     }
 
+    // 分页
+    const total = list.length;
+    const start = (page - 1) * ipPageSize;
+    const end = start + ipPageSize;
+    const pageData = list.slice(start, end);
+
     let html = '<table><thead><tr><th>IP 地址</th><th>备注</th><th>状态</th><th>设备 ID</th><th>激活时间</th><th>最后活跃</th><th>任务次数</th><th>操作</th></tr></thead><tbody>';
 
-    list.forEach(item => {
+    pageData.forEach(item => {
         const statusBadge = item.status === 'approved' ? 'badge-success' :
             item.status === 'pending' ? 'badge-warning' : 'badge-danger';
         const machineIdDisplay = item.machineId && item.machineId !== '-' ?
@@ -2274,7 +2405,23 @@ function displayAllIPsList(list) {
     });
 
     html += '</tbody></table>';
-    html += `<div class="hint" style="margin-top: 10px;">共 ${list.length} 个 IP 地址</div>`;
+    
+    // 分页控件
+    const totalPages = Math.ceil(total / ipPageSize);
+    if (totalPages > 1) {
+        html += '<div class="pagination" style="margin-top: 20px;">';
+        if (page > 1) {
+            html += `<button class="btn btn-sm" onclick="loadAllIPs(${page - 1})">上一页</button>`;
+        }
+        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个 IP)</span>`;
+        if (page < totalPages) {
+            html += `<button class="btn btn-sm" onclick="loadAllIPs(${page + 1})">下一页</button>`;
+        }
+        html += '</div>';
+    } else {
+        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个 IP 地址</div>`;
+    }
+    
     document.getElementById('allIPsContainer').innerHTML = html;
 }
 
@@ -2283,7 +2430,8 @@ function searchIPs() {
     const keyword = document.getElementById('ipSearchKeyword').value.trim().toLowerCase();
 
     if (!keyword) {
-        displayAllIPsList(allIPsCache);
+        displayAllIPsList(allIPsCache, 1);
+        currentIPPage = 1;
         return;
     }
 
@@ -2293,7 +2441,8 @@ function searchIPs() {
         (item.note && item.note.toLowerCase().includes(keyword))
     );
 
-    displayAllIPsList(filtered);
+    currentIPPage = 1;
+    displayAllIPsList(filtered, 1);
 }
 
 // 编辑 IP 备注
@@ -2310,7 +2459,7 @@ async function editIPNote(ip, currentNote) {
         // 更新全局用户数据缓存
         const globalInfo = globalUserData.ipToInfo.get(ip);
         if (globalInfo) globalInfo.userName = note;
-        displayAllIPsList(allIPsCache);
+        displayAllIPsList(allIPsCache, currentIPPage);
     } else {
         showMessage(result.error || '更新失败', 'error');
     }
@@ -2320,9 +2469,12 @@ async function editIPNote(ip, currentNote) {
 
 // 缓存所有设备数据
 let allDevicesCache = [];
+let currentDevicePage = 1;
+const devicePageSize = 20;
 
 // 加载所有设备
-async function loadAllDevices() {
+async function loadAllDevices(page = 1) {
+    currentDevicePage = page;
     document.getElementById('allDevicesContainer').innerHTML = '<div class="loading">正在加载...</div>';
 
     // 并行加载待审核和已通过列表来提取设备信息
@@ -2403,13 +2555,9 @@ async function loadAllDevices() {
                             licenses: [lic.license],
                             firstSeen: device.firstSeen || '-',
                             lastSeen: device.lastSeen || '-',
-                            isBanned: device.isBanned || false,
-                            totalTasks: device.totalTasks || 0
+                            isBanned: device.isBanned || false
                         });
                     } else {
-                        if (device.totalTasks) {
-                            existing.totalTasks = (existing.totalTasks || 0) + device.totalTasks;
-                        }
                         if (!existing.licenses.includes(lic.license)) {
                             existing.licenses.push(lic.license);
                         }
@@ -2429,7 +2577,7 @@ async function loadAllDevices() {
 
     allDevicesCache = Array.from(deviceMap.values());
     displayDeviceStats();
-    displayAllDevicesList(allDevicesCache);
+    displayAllDevicesList(allDevicesCache, page);
 }
 
 // 显示设备统计
@@ -2459,15 +2607,21 @@ function displayDeviceStats() {
 }
 
 // 显示设备列表
-function displayAllDevicesList(list) {
+function displayAllDevicesList(list, page = 1) {
     if (!list || list.length === 0) {
         document.getElementById('allDevicesContainer').innerHTML = '<div class="loading">暂无设备数据</div>';
         return;
     }
 
-    let html = '<table><thead><tr><th>设备 ID</th><th>状态</th><th>关联 IP</th><th>关联密钥</th><th>任务数</th><th>首次使用</th><th>最后使用</th><th>操作</th></tr></thead><tbody>';
+    // 分页
+    const total = list.length;
+    const start = (page - 1) * devicePageSize;
+    const end = start + devicePageSize;
+    const pageData = list.slice(start, end);
 
-    list.forEach(item => {
+    let html = '<table><thead><tr><th>设备 ID</th><th>状态</th><th>关联 IP</th><th>关联密钥</th><th>首次使用</th><th>最后使用</th><th>操作</th></tr></thead><tbody>';
+
+    pageData.forEach(item => {
         const statusBadge = item.status === 'approved' || item.status === 'active' ? 'badge-success' :
             item.status === 'pending' ? 'badge-warning' : 'badge-danger';
         const machineIdDisplay = item.machineId.substring(0, 12) + '...';
@@ -2491,7 +2645,6 @@ function displayAllDevicesList(list) {
             <td><span class="badge ${statusBadge}">${item.statusText}</span></td>
             <td><span class="code" title="${item.ips.join(', ')}">${ipsDisplay}</span></td>
             <td><span class="code" title="${item.licenses.join(', ')}">${licensesDisplay}</span></td>
-            <td><span class="badge badge-info">${item.totalTasks || 0}</span></td>
             <td>${item.firstSeen}</td>
             <td>${item.lastSeen}</td>
             <td>${actions}</td>
@@ -2499,7 +2652,23 @@ function displayAllDevicesList(list) {
     });
 
     html += '</tbody></table>';
-    html += `<div class="hint" style="margin-top: 10px;">共 ${list.length} 个设备</div>`;
+    
+    // 分页控件
+    const totalPages = Math.ceil(total / devicePageSize);
+    if (totalPages > 1) {
+        html += '<div class="pagination" style="margin-top: 20px;">';
+        if (page > 1) {
+            html += `<button class="btn btn-sm" onclick="loadAllDevices(${page - 1})">上一页</button>`;
+        }
+        html += `<span>第 ${page} / ${totalPages} 页 (共 ${total} 个设备)</span>`;
+        if (page < totalPages) {
+            html += `<button class="btn btn-sm" onclick="loadAllDevices(${page + 1})">下一页</button>`;
+        }
+        html += '</div>';
+    } else {
+        html += `<div class="hint" style="margin-top: 10px;">共 ${total} 个设备</div>`;
+    }
+    
     document.getElementById('allDevicesContainer').innerHTML = html;
 }
 
@@ -2508,7 +2677,8 @@ function searchDevicesGlobal() {
     const keyword = document.getElementById('deviceSearchKeyword').value.trim().toLowerCase();
 
     if (!keyword) {
-        displayAllDevicesList(allDevicesCache);
+        displayAllDevicesList(allDevicesCache, 1);
+        currentDevicePage = 1;
         return;
     }
 
@@ -2518,7 +2688,8 @@ function searchDevicesGlobal() {
         item.licenses.some(lic => lic.toLowerCase().includes(keyword))
     );
 
-    displayAllDevicesList(filtered);
+    currentDevicePage = 1;
+    displayAllDevicesList(filtered, 1);
 }
 
 // 全局封禁设备
